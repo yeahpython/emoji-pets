@@ -9,20 +9,54 @@
 	pointer-events: none;
 }
 
+#collision_illustrator {
+	position:absolute;
+	z-index:99999999;
+	border: 2px solid red;
+}
+
+#position_illustrator {
+	position:absolute;
+	top:0px;
+	left:0px;
+	z-index:99999999;
+	border: 2px solid red;
+	pointer-events: none;
+
+}
+
+#emoji {
+	width:20px;
+	height:20px;
+}
+
+#bad_position_illustrator {
+	position:absolute;
+	top:0px;
+	left:0px;
+	z-index:99999999;
+	border: 2px dashed blue;
+	pointer-events: none;
+
+}
+
 .chrome-pet-positioner {
-	position: relative;
+	position: absolute;
 	display:block;
 	z-index:10;
+	width:20px;
+	height:20px;
 	/*background-color:rgba(255,255,0,0.5);*/
 }
 
 .chrome-pet {
 	position: relative;
 	display:block;
-	width:30px;
-	height:30px;
-	background-color:white;
+	width:20px;
+	height:20px;
+	/*background-color:white;
 	border:solid 2px gray;
 	border-radius:10px;
 	color:red;
+	font-size:7pt;*/
 }
