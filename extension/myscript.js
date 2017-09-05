@@ -1,19 +1,13 @@
 
 var active = false;
-chrome.storage.local.get("active", function(items){
-    active = items["active"] == true; // want to treat undefined as inactive
-    if (active) {
+chrome.runtime.onMessage.addListener(function(msg, sender, sendResponse) {
+  if (msg.action == 'toggle_emoji') {
+    active = !active;
+    if (active == true) {
       addEmoji();
     }
-    chrome.storage.onChanged.addListener(function(changes, namespace){
-      active = changes["active"].newValue;
-      if (active) {
-        addEmoji();
-      } // else the loop will automatically terminate
-    });
-  });
-
-
+  }
+});
 
 function addEmoji(){
   var semanticModules = "cite, time, div, blockquote, sub, em, sup, p, li, td, strong, i, b, span, h1, h2, h3, h4, h5, h6, a, button, footer, label, bdi";
