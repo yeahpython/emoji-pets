@@ -5,58 +5,16 @@
 	top:0px;
 	left:0px;
 	z-index:99999999;
-	/*border:solid 1px black;*/
 	pointer-events: none;
 }
 
-#collision_illustrator_2 {
-	position:absolute;
-	z-index:99999999;
-	/*border: 1px solid #eeeeee;*/
-	/*box-shadow: 0px 0px 5px gray;*/
-}
-
-#position_illustrator {
-	position:absolute;
-	top:0px;
-	left:0px;
-	z-index:99999999;
-	/*border: 2px solid red;*/
-	pointer-events: none;
-}
-
-/*:hover{
-	background-color:rgba(0,0,0,0.1);
-}*/
-
-
-/*#boundary {
-	position:fixed;
-
-}
-*/
 #emoji {
 	width:20px;
 	height:20px;
 }
 
-/*.highlight {
-	background-color:yellow;
-}*/
-
-#bad_position_illustrator {
-	position:absolute;
-	top:0px;
-	left:0px;
-	z-index:99999999;
-	/*border: 2px dashed blue;*/
-	pointer-events: none;
-
-}
-
-.barrier {
-	/*border: dashed 1px #eeeeee !important*/
-	display:inline-block;
+.emoji-extension-barrier {
+	/*display:inline-block;*/
 }
 
 .chrome-pet-positioner {
@@ -65,7 +23,6 @@
 	z-index:10;
 	width:20px;
 	height:20px;
-	/*background-color:rgba(255,255,0,0.5);*/
 }
 
 .chrome-pet {
@@ -73,9 +30,4 @@
 	display:block;
 	width:20px;
 	height:20px;
-	/*background-color:white;
-	border:solid 2px gray;
-	border-radius:10px;
-	color:red;
-	font-size:7pt;*/
 }

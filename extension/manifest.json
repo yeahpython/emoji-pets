@@ -1,6 +1,6 @@
 {
-  "name": "Chrome Pets",
-  "description": "Cute, cute chrome pets!",
+  "name": "Annoying Emoji Pet",
+  "description": "Get your own cute emoji pet to explore the internet with you!",
   "version": "1.0",
   "permissions": [
     "storage",
@@ -15,20 +15,15 @@
       "run_at": "document_end"
     }
   ],
-  // "background": {
-  //   "scripts":["background.js"]
-  // },
-  // "icons": {
-  //   "128": "images/icon128.png"
-  //   },
-  // "browser_action": {
-  //   "default_icon": {
-  //     "19": "images/icon19.png",
-  //     "38": "images/icon38.png"
-  //   },
-  //   "default_title": "A Quieter Internet",
-  //   "default_popup": "browser_action.html"
-  // },
+  "background": {
+    "scripts":["background.js"]
+  },
+  "browser_action": {
+    "default_icon": {
+      "19": "images/emoji-19.png",
+      "38": "images/emoji-38.png"
+    }
+  },
   "web_accessible_resources": [
 "emojione/1f600.png",
 "emojione/1f601.png",

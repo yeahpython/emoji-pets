@@ -1,65 +1,77 @@
-var semanticModules = "cite, time, div, blockquote, sub, em, sup, p, li, td, strong, i, b, span, h1, h2, h3, h4, h5, h6, a, button, footer, label, bdi";
-// semanticModules = "img"
+
+var active = false;
+chrome.storage.local.get("active", function(items){
+    active = items["active"] == true; // want to treat undefined as inactive
+    if (active) {
+      addEmoji();
+    }
+    chrome.storage.onChanged.addListener(function(changes, namespace){
+      active = changes["active"].newValue;
+      if (active) {
+        addEmoji();
+      } // else the loop will automatically terminate
+    });
+  });
 
 
-var windowWidth = $(window).width();
+
+function addEmoji(){
+  var semanticModules = "cite, time, div, blockquote, sub, em, sup, p, li, td, strong, i, b, span, h1, h2, h3, h4, h5, h6, a, button, footer, label, bdi";
+  // semanticModules = "img"
 
 
-function background_color_change(index, elem){
-  var $this = $(this)
-  return $this.css("background-color") != "rgba(0, 0, 0, 0)" &&
-  $this.css("background-color") != "none" &&
-  $this.css("display") != "none" &&
-  $this.css("visibility") != "hidden" &&
-  $this.css("background-color") != $(this).parent().css("background-color");
-}
+  var windowWidth = $(window).width();
 
-function contains_text(index,elem) {
-  var immediatelyContainedText = $(this).contents().not($(this).children()).filter(function() {
-      return this.nodeType === 3; //Node.TEXT_NODE
-    }).text();
-  // if ($(this).attr("class") == "_NId") {
-  //   console.log("[" + immediatelyContainedText + "]" + (immediatelyContainedText != ""));
+
+  function background_color_change(index, elem){
+    var $this = $(this)
+    return $this.css("background-color") != "rgba(0, 0, 0, 0)" &&
+    $this.css("background-color") != "none" &&
+    $this.css("display") != "none" &&
+    $this.css("visibility") != "hidden" &&
+    $this.css("background-color") != $(this).parent().css("background-color");
+  }
+
+  function contains_text(index,elem) {
+    var immediatelyContainedText = $(this).contents().not($(this).children()).filter(function() {
+        return this.nodeType === 3; //Node.TEXT_NODE
+      }).text();
+    // if ($(this).attr("class") == "_NId") {
+    //   console.log("[" + immediatelyContainedText + "]" + (immediatelyContainedText != ""));
+    // }
+    // replaced whitespace
+    return immediatelyContainedText.replace(/\s+/g, '') != "";
+  }
+
+  $(semanticModules).filter(contains_text).addClass('emoji-extension-barrier');
+
+
+
+
+  // $("span").css('border', 'dashed 3px black');
+
+  // function addEvent(element, eventName, callback) {
+  //     if (element.addEventListener) {
+  //         element.addEventListener(eventName, callback, false);
+  //     } else if (element.attachEvent) {
+  //         element.attachEvent("on" + eventName, callback);
+  //     } else {
+  //         element["on" + eventName] = callback;
+  //     }
   // }
-  // replaced whitespace
-  return immediatelyContainedText.replace(/\s+/g, '') != "";
-}
 
-$(semanticModules).filter(contains_text).addClass('barrier');
-
+  function randomizeEmoji(){
+    $("#emoji").attr("src", chrome.extension.getURL('emojione/1f6' + ("0" + Math.floor((Math.random() * 40))).slice(-2) + '.png'));
+  }
 
 
-
-// $("span").css('border', 'dashed 3px black');
-
-$("<div id='chrome-pet-box'></div>").appendTo(document.body);
-$("<div class='chrome-pet-positioner'></div>").appendTo($("#chrome-pet-box"));
-$("<div class='chrome-pet'>^_^</div>").appendTo($(".chrome-pet-positioner"));
-$("<div id='collision_illustrator'></div>").appendTo(document.body);
-$("<div id='collision_illustrator_2'></div>").appendTo(document.body);
-
-$("<div id='position_illustrator'></div>").appendTo(document.body);
-$("<div id='bad_position_illustrator'></div>").appendTo(document.body);
+  $("<div id='chrome-pet-box'></div>").appendTo(document.body);
+  $("<div class='chrome-pet-positioner'></div>").appendTo($("#chrome-pet-box"));
+  $("<div class='chrome-pet'>^_^</div>").appendTo($(".chrome-pet-positioner"));
 
 
-$(".chrome-pet").text("");
-$("<img id='emoji'></img>").attr("src", chrome.extension.getURL('emojione/1f600.png')).appendTo($(".chrome-pet"));
-
-// function addEvent(element, eventName, callback) {
-//     if (element.addEventListener) {
-//         element.addEventListener(eventName, callback, false);
-//     } else if (element.attachEvent) {
-//         element.attachEvent("on" + eventName, callback);
-//     } else {
-//         element["on" + eventName] = callback;
-//     }
-// }
-
-function randomizeEmoji(){
-  $("#emoji").attr("src", chrome.extension.getURL('emojione/1f6' + ("0" + Math.floor((Math.random() * 40))).slice(-2) + '.png'));
-}
-
-(function(){
+  $(".chrome-pet").text("");
+  $("<img id='emoji'></img>").attr("src", chrome.extension.getURL('emojione/1f600.png')).appendTo($(".chrome-pet"));
 
   $('.chrome-pet-positioner').css("left", Math.floor(Math.random() * $(window).width()) + 'px');
   $('.chrome-pet-positioner').css("top", Math.floor(Math.random() * $(window).height()) + 'px');
@@ -201,155 +213,65 @@ function randomizeEmoji(){
     // var oy = parseInt($('.chrome-pet-positioner').offset().top, 10);
     // console.log("ox:" + ox + "oy" + oy);
 
-    $barriers = $(".barrier").not(":hidden").slice(0,200);
+    $barriers = $(".emoji-extension-barrier").not(":hidden").slice(0,200);
     // console.log($barriers.size());
     // projecting step
 
 
+    var signs = [-1, 1, -1, 1];
+    var targets = ["left", "left", "top", "top"];
+
+    var pet_width = parseInt($('.chrome-pet-positioner').outerWidth(), 10);
+    var pet_height = parseInt($('.chrome-pet-positioner').outerHeight(), 10);
     $barriers.each(function(){
       var position = $(this).offset();
-      var size = {height:parseInt($(this).outerHeight(),10), width:parseInt($(this).outerWidth(), 10)};
-
-      // console.log(position);
-      // console.log(size);
-
-      position.left = parseInt(position.left, 10);
-      position.top = parseInt(position.top, 10);
-
-      // a is true when we are doing vertical bars
-      // b is true when we are bottom right
-      for (var a = 0; a < 2; a++) {
-        for (var b = 0; b < 2; b++) {
-          if (0 /* using lines */) {
-            var new_position = {left: (a && !b) ? position.left + size.width : position.left,
-                                top:  (a || !b) ? position.top : position.top + size.height};
-            var new_size = {width: a ? 0 : size.width,
-                            height: a ? size.height : 0};
-          } else {
-            if (a || b) {
-              continue;
-            } else {
-              var new_position = {left: position.left,
-                                  top:  position.top};
-              var new_size = {width: size.width,
-                              height: size.height};
-            }
-          }
+      var new_position = {left: parseInt(position.left, 10),
+                          top:  parseInt(position.top, 10)};
+      var new_size = {width: parseInt($(this).outerWidth(), 10),
+                      height: parseInt($(this).outerHeight(),10)};
 
 
-          // console.log("block: " + new_position);
-          // console.log("block size: " + new_size);
+      var violations = [];
 
 
+      var pet_offset = $('.chrome-pet-positioner').offset()
+      var pet_left = parseInt(pet_offset.left, 10);
+      var pet_top = parseInt(pet_offset.top, 10);
 
-          var violations = [];
-          var signs = [-1, 1, -1, 1];
-          var targets = ["left", "left", "top", "top"];
+      violations.push(pet_left + pet_width - new_position.left);
+      violations.push((new_position.left + new_size.width) - pet_left);
+      violations.push(pet_top + pet_height - new_position.top);
+      violations.push((new_position.top + new_size.height) - pet_top);
 
-
-          var left = parseInt($('.chrome-pet-positioner').offset().left, 10);
-          var width = parseInt($('.chrome-pet-positioner').outerWidth(), 10)
-          var top = parseInt($('.chrome-pet-positioner').offset().top, 10);
-          var height = parseInt($('.chrome-pet-positioner').outerHeight(), 10)
-
-          // console.log("left " + left);
-          // console.log("width " + width);
-          // console.log("top" + top);
-          // console.log("height" + height);
-
-          // console.log((new_position.left));
-          // conso + new_size.width));
-
-          violations.push(left + width - new_position.left);
-          violations.push((new_position.left + new_size.width) - left);
-          violations.push(top + height - new_position.top);
-          violations.push((new_position.top + new_size.height) - top);
-
-          // either there are no violations, or we can find
-          // the smallest positive number in the list
-          var smallest_violation = 0;
-          var best_index = -1;
-          for (var i = 0; i < 4; i++) {
-            if (best_index == -1 || violations[i] < smallest_violation) {
-              smallest_violation = violations[i];
-              best_index = i;
-            }
-          }
-
-          if (smallest_violation > 0) {
-            if (best_index != 3) {
-              jump_allowed = true;
-            }
-            // if(~~(best_index / 2) != last_best_index) {
-            //   last_best_index = ~~(best_index / 2);
-            //   // randomize icon when colliding with a wall facing a different direction
-            //   randomizeEmoji();
-            // }
-            // Change the appropriate coordinate in the appropriate direction.
-            var original = parseInt($('.chrome-pet-positioner').css(targets[best_index]), 10);
-            // console.log("best_index:" + best_index + " smallest_violation:" + signs[best_index] * smallest_violation);
-            var modified = original + signs[best_index] * smallest_violation;
-            // console.log(targets[best_index] + " modified by " + signs[best_index] * smallest_violation);
-            // console.log(modified + 'px');
-            // if (best_index == 0)  {
-            //   console.log("a: ", a + " b:" + b);
-            //   console.log($(this).parents().map(function(index, elem){
-            //     if (elem === undefined) {
-            //       return undefined;
-            //     }
-            //     return $(elem).attr("class") + $(elem).css("position");
-            //   }));
-            // }
-            // $(".highlight").removeClass("highlight");
-            // $(this).addClass("highlight");
-            $('#collision_illustrator').css("left", new_position.left).css("top", new_position.top).css("width", new_size.width).css("height", new_size.height);
-            $('#collision_illustrator_2').css("left", new_position.left).css("top", new_position.top).css("width", new_size.width).css("height", new_size.height);
-            if (a == 0) {
-              var proposed_left = parseInt($('.chrome-pet-positioner').css("left"), 10);
-              var proposed_width = $('.chrome-pet-positioner').width();
-              var actual_left = Math.max(parseInt($('.chrome-pet-positioner').css("left"), 10), new_position.left);
-              var actual_right = Math.min(proposed_left + proposed_width, new_position.left + new_size.width);
-              $('#collision_illustrator_2').css("left", actual_left)
-              .css("width", actual_right - actual_left);
-            } else {
-              var proposed_top = parseInt($('.chrome-pet-positioner').css("top"), 10);
-              var proposed_height = $('.chrome-pet-positioner').height();
-              var actual_top = Math.max(parseInt($('.chrome-pet-positioner').css("top"), 10), new_position.top);
-              var actual_bottom = Math.min(proposed_top + proposed_height, new_position.top + new_size.height);
-              $('#collision_illustrator_2').css("top", actual_top)
-              .css("height", actual_bottom - actual_top);
-            }
-            // console.log(violations);
-            $('.chrome-pet-positioner').css(targets[best_index], modified + 'px');
-            var new_x = parseInt($('.chrome-pet-positioner').offset().left, 10);
-            var new_y = parseInt($('.chrome-pet-positioner').offset().top, 10);
-            // $('#position_illustrator').css("width", new_x + 'px');
-            // $('#position_illustrator').css("height", new_y + 'px');
-            // console.log(original_y + ' ' + y);
-            // velocity update
-            vx = 0; //new_x - x;
-            vy = 0;//new_y - y;
-          }
+      // either there are no violations, or we can find
+      // the smallest positive number in the list
+      var smallest_violation = 0;
+      var best_index = -1;
+      for (var i = 0; i < 4; i++) {
+        if (best_index == -1 || violations[i] < smallest_violation) {
+          smallest_violation = violations[i];
+          best_index = i;
         }
       }
+
+      if (smallest_violation > 0) {
+        if (best_index != 3) {
+          jump_allowed = true;
+        }
+        var original = parseInt($('.chrome-pet-positioner').css(targets[best_index]), 10);
+        var modified = original + signs[best_index] * smallest_violation;
+
+        $('.chrome-pet-positioner').css(targets[best_index], modified + 'px');
+        vx = 0;
+        vy = 0;
+      }
+
     })
-
-    var new_x = parseInt($('.chrome-pet-positioner').offset().left, 10);
-    var new_y = parseInt($('.chrome-pet-positioner').offset().top, 10);
-    $('#position_illustrator').css("width", new_x + 'px');
-    $('#position_illustrator').css("height", new_y + 'px');
-
-    var $temp = $('.chrome-pet-positioner').clone().css("left", new_x).css("top", new_y).appendTo("#chrome-pet-box");
-
-    new_x = parseInt($temp.offset().left, 10);
-    new_y = parseInt($temp.offset().top, 10);
-    // console.log($temp.offset().left + " " + new_x);
-    $('#bad_position_illustrator').css("width", new_x + 'px');
-    $('#bad_position_illustrator').css("height", new_y + 'px');
-
-    $temp.remove();
-
-    setTimeout(timestep, 30);
+    if (active) {
+      setTimeout(timestep, 30);
+    } else {
+      $("#chrome-pet-box").remove();
+    }
   }
   timestep();
-})();
+};

@@ -12,3 +12,11 @@ function toggleActiveTab() {
 	    chrome.tabs.sendMessage(tabs[0].id, {action: "toggle_disable"});
 	});
 }
+
+
+chrome.browserAction.onClicked.addListener(function(tab) {
+  chrome.storage.local.get("active", function(items){
+		var active = items["active"];
+		chrome.storage.local.set({"active":active !== true}, function(){});
+	});
+});
