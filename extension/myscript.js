@@ -9,8 +9,31 @@ chrome.runtime.onMessage.addListener(function(msg, sender, sendResponse) {
   }
 });
 
+
+// modified from https://stackoverflow.com/questions/35939886/find-first-scrollable-parent
+// Actually looking for the thing that will control my movement
+function getScrollParent(element, includeHidden) {
+  if (element == null) {
+    return null;
+  }
+  var style = getComputedStyle(element);
+  var excludeStaticParent = style.position === "absolute";
+  var overflowRegex = includeHidden ? /(auto|scroll|hidden)/ : /(auto|scroll)/;
+
+  if (style.position === "fixed") return element;
+  for (var parent = element; (parent = parent.parentElement);) {
+      style = getComputedStyle(parent);
+      if (excludeStaticParent && style.position === "static") {
+          continue;
+      }
+      if (style.position === "fixed" || overflowRegex.test(style.overflow + style.overflowY + style.overflowX)) return parent;
+  }
+
+  return document.body;
+}
+
 function addEmoji(){
-  var semanticModules = "cite, time, div, blockquote, sub, em, sup, p, li, td, strong, i, b, span, h1, h2, h3, h4, h5, h6, a, button, footer, label, bdi";
+  // var semanticModules = "cite, time, div, blockquote, sub, em, sup, p, li, td, strong, i, b, span, h1, h2, h3, h4, h5, h6, a, button, footer, label, bdi";
   // semanticModules = "img"
 
 
@@ -25,8 +48,10 @@ function addEmoji(){
     $this.css("visibility") != "hidden" &&
     $this.css("background-color") != $(this).parent().css("background-color");
   }
-
   function contains_text(index,elem) {
+    if (["VIDEO", "IMG"].indexOf($(this).prop("tagName")) != -1) {
+      return true;
+    }
     var immediatelyContainedText = $(this).contents().not($(this).children()).filter(function() {
         return this.nodeType === 3; //Node.TEXT_NODE
       }).text();
@@ -37,7 +62,7 @@ function addEmoji(){
     return immediatelyContainedText.replace(/\s+/g, '') != "";
   }
 
-  $(semanticModules).filter(contains_text).addClass('emoji-extension-barrier');
+  // $(semanticModules).filter(contains_text).addClass('emoji-extension-barrier');
 
 
 
@@ -55,7 +80,8 @@ function addEmoji(){
   // }
 
   function randomizeEmoji(){
-    $("#emoji").attr("src", chrome.extension.getURL('emojione/1f6' + ("0" + Math.floor((Math.random() * 40))).slice(-2) + '.png'));
+    // $("#emoji").attr("src", chrome.extension.getURL('emojione/1f6' + ("0" + Math.floor((Math.random() * 40))).slice(-2) + '.png'));
+    $("#emoji").html("&#" + (128513 + Math.floor(Math.random() * (128567 - 128513))) + ";");
   }
 
 
@@ -65,10 +91,12 @@ function addEmoji(){
 
 
   $(".chrome-pet").text("");
-  $("<img id='emoji'></img>").attr("src", chrome.extension.getURL('emojione/1f600.png')).appendTo($(".chrome-pet"));
+  $("<div id='emoji'></div>").appendTo($(".chrome-pet"));
+  randomizeEmoji();
+  // $("<img id='emoji'></img>").attr("src", chrome.extension.getURL('emojione/1f600.png')).appendTo($(".chrome-pet"));
 
-  $('.chrome-pet-positioner').css("left", Math.floor(Math.random() * $(window).width()) + 'px');
-  $('.chrome-pet-positioner').css("top", Math.floor(Math.random() * $(window).height()) + 'px');
+  $('.chrome-pet-positioner').css("left", $(window).scrollLeft() + Math.floor($(window).width()/2));
+  $('.chrome-pet-positioner').css("top", $(window).scrollTop() + Math.floor($(window).height()/2));
   // var x = 100;
   // var y = 100;
   var vx = 0;
@@ -89,7 +117,7 @@ function addEmoji(){
   // });
 
   // key_tracker = {37:false, 38:false, 39:false, 40:false}
-  var old_keydowns = {37:false, 38:false, 39:false, 40:false}
+  // var old_keydowns = {37:false, 38:false, 39:false, 40:false}
   var keydowns     = {37:false, 38:false, 39:false, 40:false}
   var jump_allowed = true
  /* window.addEventListener("keydown", function(e) {
@@ -112,7 +140,10 @@ function addEmoji(){
 
   var collided = [];
   var last_best_index = -1;
+  var last_support_left = 0;
+  var last_support_top = 0;
   function timestep() {
+    // Randomly change motion and appearance
     for (var i = 37; i <40; i++) {
       var rand = Math.random();
       var threshold = 0.97;
@@ -127,7 +158,7 @@ function addEmoji(){
       }
     }
 
-
+    // Set velocity based on keystrokes
     if (keydowns[39] && !keydowns[37]) {
       vx = 4;
       $("#emoji").css("transform", "rotate(30deg)");
@@ -147,15 +178,12 @@ function addEmoji(){
       vy = -10;
       jump_allowed = false;
     }
-    old_keydowns = {37:keydowns[37], 38:keydowns[38], 39:keydowns[39], 40:keydowns[40]}
+    // store previous state of keys
+    // old_keydowns = {37:keydowns[37], 38:keydowns[38], 39:keydowns[39], 40:keydowns[40]}
     // console.log(old_keydowns);
     // console.log("step");
     //physics step: move the box
-    var y = parseInt($(".chrome-pet-positioner").css("top"), 10);
-    var x = parseInt($(".chrome-pet-positioner").css("left"), 10);
 
-    // var original_x = x;
-    // var original_y = y;
     smooth_accumulator += 0.8;
     // uhh
     while (smooth_accumulator > 1) {
@@ -174,50 +202,136 @@ function addEmoji(){
     if (vx < -9) {
       vx = -9;
     }
-    // x += vx;
-    // y += vy;
-    // console.log("x:" + x + " y: " + y);
 
-    // console.log(x + vx);
+
+    var y = $(".chrome-pet-positioner").offset().top;
+    var x = $(".chrome-pet-positioner").offset().left;
+    // console.log("y" + y);
+    // Project the emoji into view
     var window_top = $(window).scrollTop();
     var window_left = $(window).scrollLeft();
     var window_bottom = window_top + $(window).height();
     var window_right = window_left + $(window).width();
-    if (y + vy < window_top) {
-      var new_y = window_top;
+
+
+    var center_x = x - $(window).scrollLeft() + $("#emoji").width()/2;
+    var center_y = y - $(window).scrollTop() + $("#emoji").height()/2;
+    var elem = document.elementFromPoint(center_x, center_y);
+
+    $(".highlight").removeClass("highlight");
+    var dx = 0;
+    var dy = 0;
+    // if (elem != null) {
+    //   $(elem).addClass("highlight");
+
+    //   var elem_offset = $(elem).offset();
+    //   // modify compensation term if necessary
+    //   if ($(elem).hasClass("last_support")) {
+
+    //     dx = elem_offset.left - last_support_left;
+    //     dy = elem_offset.top - last_support_top;
+    //   } else {
+    //     // change last support
+    //     $(".last_support").removeClass("last_support");
+    //     $(elem).addClass("last_support");
+    //   }
+    //   // console.log(elem);
+    //   last_support_left = elem_offset.left;
+    //   last_support_top = elem_offset.top;
+    // } else {
+    //   $(".last_support").removeClass("last_support");
+    // }
+
+    // change reference position
+    x = x + dx;
+    y = y + dy;
+    var new_y = y + vy;
+    var new_x = x + vx;
+    if (new_y < window_top) {
+      new_y = window_top;
       vy = new_y - y;
-    } else if (y + vy + $(".chrome-pet-positioner").outerHeight() > window_bottom) {
-      var new_y = window_bottom - $(".chrome-pet-positioner").outerHeight();
+    } else if (new_y + $("#emoji").outerHeight() > window_bottom) {
+      new_y = window_bottom - $("#emoji").outerHeight();
       vy = new_y - y;
       jump_allowed = true
-    } else if (x + vx < window_left) {
-      var new_x = window_left;
+    } else if (new_x < window_left) {
+      new_x = window_left;
       vx = new_x - x;
       jump_allowed = true
-    } else if (x + vx + $(".chrome-pet-positioner").outerWidth() > window_right) {
-      var new_x = window_right - $(".chrome-pet-positioner").outerWidth();
+    } else if (new_x + $("#emoji").outerWidth() > window_right) {
+      new_x = window_right - $("#emoji").outerWidth();
       vx = new_x - x;
       jump_allowed = true
     }
 
-    $(".chrome-pet-positioner").css("top", y + vy);
-    $(".chrome-pet-positioner").css("left", x + vx);
+    // Apply relative fix to position based on collision
+    // var temp_y = parseInt($(".chrome-pet-positioner").css("top"), 10);
+    // var temp_x = parseInt($(".chrome-pet-positioner").css("left"), 10);
+    // $(".chrome-pet-positioner").css("top", temp_y + vy);
+    // $(".chrome-pet-positioner").css("left", temp_x + vx);
 
-    // var ox = parseInt($('.chrome-pet-positioner').offset().left, 10);
-    // var oy = parseInt($('.chrome-pet-positioner').offset().top, 10);
-    // console.log("ox:" + ox + "oy" + oy);
+    $(".chrome-pet-positioner").offset({left:new_x, top:new_y});
 
-    $barriers = $(".emoji-extension-barrier").not(":hidden").slice(0,200);
-    // console.log($barriers.size());
+
+
+
+
+    y = $(".chrome-pet-positioner").offset().top;
+    x = $(".chrome-pet-positioner").offset().left;
+
+
+    // trick: Change the parent of $(".chrome-pet-box")
+    // determine candidate parent
+    if (elem != null) {
+      elem = getScrollParent(elem, false);
+    }
+    if (elem != $("#chrome-pet-box").parent()[0] && elem != null && ["IMG", "TEXTAREA", "BR", "VIDEO", "INPUT", "path", "svg", "g", "IFRAME"].indexOf($(elem).prop("tagName")) == -1) {
+      // Move to new parent.
+      console.log(elem);
+      $("#chrome-pet-box").appendTo(elem);
+      // Find out the change of coordinates that is induced by the change.
+      var modified_y = $(".chrome-pet-positioner").offset().top;
+      var modified_x = $(".chrome-pet-positioner").offset().left;
+      var needed_dy = y-modified_y;
+      var needed_dx = x-modified_x;
+
+      // Add offset to keep global position consistent.
+      var targ = {left:x, top:y};
+      // console.log(targ);
+      $(".chrome-pet-positioner").offset(targ);
+      actual_y = $(".chrome-pet-positioner").offset().top;
+      actual_x = $(".chrome-pet-positioner").offset().left;
+      if (actual_y != y || actual_x != x) {
+        console.log("Bad teleport");
+        console.log(elem);
+        console.log(x + "->" + actual_x + " ," + y + "->" + actual_y);
+      }
+      // console.log(y + " " + x);
+      // temp_y = parseInt($(".chrome-pet-positioner").css("top"), 10);
+      // temp_x = parseInt($(".chrome-pet-positioner").css("left"), 10);
+      // $(".chrome-pet-positioner").css("top", temp_y + needed_dy);
+      // $(".chrome-pet-positioner").css("left", temp_x + needed_dx);
+    }
+
+
     // projecting step
-
-
     var signs = [-1, 1, -1, 1];
     var targets = ["left", "left", "top", "top"];
 
-    var pet_width = parseInt($('.chrome-pet-positioner').outerWidth(), 10);
-    var pet_height = parseInt($('.chrome-pet-positioner').outerHeight(), 10);
-    $barriers.each(function(){
+    var pet_width = $('#emoji').outerWidth();
+    var pet_height = $('#emoji').outerHeight();
+    var elementsOfInterest = [];
+    for (var i = 0; i < 2; i++) {
+      for (var j = 0; j < 2; j++) {
+        var newX = x - $(window).scrollLeft() + i * ($("#emoji").width());
+        var newY = y - $(window).scrollTop() + j * ($("#emoji").height());
+        var elem = document.elementFromPoint(newX, newY);
+        if (elem != null) {
+          elementsOfInterest.push(elem);
+        };
+      }
+    }
+    $(elementsOfInterest).not("iframe, :hidden").filter(contains_text).each(function(){
       var position = $(this).offset();
       var new_position = {left: parseInt(position.left, 10),
                           top:  parseInt(position.top, 10)};
@@ -253,14 +367,14 @@ function addEmoji(){
           jump_allowed = true;
         }
         var original = parseInt($('.chrome-pet-positioner').css(targets[best_index]), 10);
-        var modified = original + signs[best_index] * smallest_violation;
+        var modified = original + signs[best_index] * 1/*smallest_violation*/;
 
         $('.chrome-pet-positioner').css(targets[best_index], modified + 'px');
         vx = 0;
         vy = 0;
       }
-
     })
+
     if (active) {
       setTimeout(timestep, 30);
     } else {
