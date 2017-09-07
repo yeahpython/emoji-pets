@@ -1,5 +1,5 @@
 
-#chrome-pet-box {
+.chrome-pet-box {
 	position:absolute !important;
 	width:100%;
 	height:100%;
@@ -12,12 +12,13 @@
 	/*overflow: hidden;*/
 }
 
-#emoji {
+.emoji {
 	position:relative !important;
 	width:20px !important;
 	height:20px !important;
 	font-size:14pt !important;
 	z-index:99999999 !important;
+	display:block;
 	/*overflow: visible;*/
 	/*line-height:normal;*/
 }
@@ -38,17 +39,3 @@
 	/*display:inline-block;*/
 }
 
-.chrome-pet-positioner {
-	position: relative;
-	display:block;
-	z-index:10;
-	width:0px;
-	height:0px;
-}
-
-.chrome-pet {
-	position: relative;
-	display:block;
-	width:0px;
-	height:0px;
-}
