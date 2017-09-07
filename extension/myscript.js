@@ -287,7 +287,6 @@ function addEmoji(){
     }
     if (elem != $("#chrome-pet-box").parent()[0] && elem != null && ["IMG", "TEXTAREA", "BR", "VIDEO", "INPUT", "path", "svg", "g", "IFRAME"].indexOf($(elem).prop("tagName")) == -1) {
       // Move to new parent.
-      console.log(elem);
       $("#chrome-pet-box").appendTo(elem);
       // Find out the change of coordinates that is induced by the change.
       var modified_y = $(".chrome-pet-positioner").offset().top;

@@ -22,6 +22,10 @@
 	/*line-height:normal;*/
 }
 
+#emoji:hover {
+	background-color:red;
+}
+
 .highlight {
 	/*-webkit-filter: invert(100%)*/
 }
