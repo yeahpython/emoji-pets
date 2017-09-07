@@ -23,6 +23,11 @@
 	/*line-height:normal;*/
 }
 
+.emoji img {
+	width:20px;
+	height:20px;
+}
+
 #emoji:hover {
 	background-color:red;
 }
