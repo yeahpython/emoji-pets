@@ -123,10 +123,10 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
     }
     if (x < window_left/* + $emoji.outerWidth()*/) {
       x = window_left/* + $emoji.outerWidth()*/;
-      jump_allowed = true
+      //jump_allowed = true
     } else if (x + $emoji.outerWidth() > window_right - rightMargin) {
       x = window_right - $emoji.outerWidth() - rightMargin;
-      jump_allowed = true
+      //jump_allowed = true
     }
     return {"y":y, "x":x, "jump_allowed":jump_allowed}
   }
@@ -149,37 +149,7 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
     return -1;
   }
 
-  function getEmoji() {
-    emoji_index = findPetBox();
-    if (emoji_index == -1) return null;
 
-    // add higher level container (is this necessary?)
-    var pet_box_id = "chrome-pet-box-" + emoji_index;
-    var $chrome_pet_box = $("<div/>")
-      .attr("id", pet_box_id)
-      .addClass("chrome-pet-box")
-      .appendTo(document.body);
-
-    // Add container for emoji
-    var emoji_id = "emoji-" + emoji_index;
-    var $emoji = $("<div/>")
-      .attr("id", emoji_id)
-      .addClass("emoji")
-      .appendTo($chrome_pet_box);
-
-    $emoji.draggable({
-      stack: ".emoji",
-      scroll: false,
-      stop : function(event, ui){
-               vx = 0;
-               vy = 0;
-               jump_allowed = false;
-               hyperactive = true;
-             }
-    });
-
-    return $emoji;
-  }
 
 
   // add a new emoji to the page, with a loop associated with it.
@@ -203,6 +173,39 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
     var ignored_parent_tags = ["IMG", "TEXTAREA", "BR", "VIDEO", "INPUT", "path", "svg", "g", "IFRAME"];
     var last_immediate_parent = null;
     var hyperactive = true;
+
+
+    function getEmoji() {
+      emoji_index = findPetBox();
+      if (emoji_index == -1) return null;
+
+      // add higher level container (is this necessary?)
+      var pet_box_id = "chrome-pet-box-" + emoji_index;
+      var $chrome_pet_box = $("<div/>")
+        .attr("id", pet_box_id)
+        .addClass("chrome-pet-box")
+        .appendTo(document.body);
+
+      // Add container for emoji
+      var emoji_id = "emoji-" + emoji_index;
+      var $emoji = $("<div/>")
+        .attr("id", emoji_id)
+        .addClass("emoji")
+        .appendTo($chrome_pet_box);
+
+      $emoji.draggable({
+        stack: ".emoji",
+        scroll: false,
+        stop : function(event, ui) {
+                 vx = 0;
+                 vy = 0;
+                 jump_allowed = false;
+                 hyperactive = true;
+               }
+      });
+
+      return $emoji;
+    }
 
     function randomlyChangeKeydownsAndAppearance() {
       // Randomly change motion and appearance
@@ -241,13 +244,16 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
     var childType = USE_DEFAULT_EMOJI ? ".text-emoji" : "img"; 
     function renderKeydowns() {
       // Set velocity based on keystrokes
+      var transform = ""
+      //transform += " translate(" + dragging_dx + "px," + dragging_dy + "px)";
       if (keydowns[RIGHT_KEY] && !keydowns[LEFT_KEY]) {
-        $emoji.children().children(childType).css("transform", "rotate(30deg)");
+        transform = "rotate(30deg)";
       } else if (keydowns[LEFT_KEY] && !keydowns[RIGHT_KEY]) {
-        $emoji.children().children(childType).css("transform", "rotate(-30deg)");
+        transform = "rotate(-30deg)";
       } else {
-        $emoji.children().children(childType).css("transform", "none");
+        transforme = "none";
       }
+      $emoji.children().children(childType).css("-webkit-transform", transform);
     }
 
     function updateVelocityAndJumpstateFromKeydowns() {
@@ -270,23 +276,29 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
         jump_allowed = false;
       }
 
-      // Gravity
-      if (hyperactive) {
-        vy += 0.8;
-      }
+      
 
-      // Velocity capping
-      if (vy > 9) {
-        vy = 9;
-      }
-      if (vy < -9) {
-        vy = -9;
-      }
-      if (vx > 9) {
-        vx = 9;
-      }
-      if (vx < -9) {
-        vx = -9;
+      if ($emoji.is('.ui-draggable-dragging')) {
+      } else {
+
+        // Gravity
+        if (hyperactive) {
+          vy += 0.8;
+        }
+
+        // Velocity capping
+        if (vy > 9) {
+          vy = 9;
+        }
+        if (vy < -9) {
+          vy = -9;
+        }
+        if (vx > 9) {
+          vx = 9;
+        }
+        if (vx < -9) {
+          vx = -9;
+        }
       }
     }
 
@@ -355,7 +367,6 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
           };
         }
       }
-      console.log(elementsOfInterest);
       return $(elementsOfInterest);
     }
 
@@ -458,13 +469,16 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
 
           // Projecting step.
           var overlapped = false;
-          
           var collision_results = elementsOfInterest()
             .not("iframe, :hidden, .emoji-pet-hitbox")
+            .not($emoji.children())
+            .not($emoji.children().children())
             .filter(is_collideable)
+            // .append("<span>hi</span>")
+            // .addClass("emoji-pet-highlight")
             .map(getPush)
             .get();
-          console.log(collision_results);
+          //$(".emoji-pet-highlight").delay(800).removeClass("emoji-pet-highlight");
           handleCollisionResults(collision_results);
         }
       }

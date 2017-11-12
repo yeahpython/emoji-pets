@@ -32,8 +32,16 @@
 	/*line-height:normal;*/
 }
 
+.emoji-pet-highlight:after {
+	/*content: "😃"*/
+	/*border: dashed 1px black;*/
+	/*background-color:rgba(255, 255, 0, 0.1);*/
+	/*-webkit-filter: blur(2px) grayscale (.5) opacity(0.8) hue-rotate(120deg);*/
+}
+
 .emoji-pet-hitbox:hover {
 	cursor:-webkit-grab;
+	display:block;
 	/*padding-left:100px;
 	padding-top:100px;
 	padding-right:100px;
@@ -48,10 +56,11 @@
 	height:19px;
 	/*background-color: rgba(255, 255, 0, 0.2);*/
 	position:absolute;
+	-webkit-box-sizing: content-box;
 	/*overflow:hidden;*/
 }
-
-/*.emoji-pet-hitbox::after {
+/*
+.emoji-pet-hitbox::after {
 	content:"";
 	cursor:-webkit-grab;
 	padding-left:80px;
@@ -68,19 +77,22 @@
 }*/
 
 .emoji-pet-hitbox:active {
-	cursor:-webkit-grabbing;
+	cursor:-webkit-grabbing !important;
 }
 
 .emoji:active {
-	cursor:-webkit-grabbing;
+	cursor:-webkit-grabbing !important;
 }
 
 .emoji img {
-	width:20px;
-	height:20px;
+	width:20px !important;
+	height:20px !important;
 }
 
 .text-emoji {
-	font-size: 14pt;
+	font-size: 14pt !important;
+	display:inline-block !important;
+	width:20px !important;
+	height:20px !important;
 }
 
