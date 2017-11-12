@@ -398,10 +398,10 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
       response = {"left" : 0, "top" : 0, overlapped : (smallest_violation >= 0)};
 
       if (smallest_violation >= 0) {
-        if (best_index != 3) {
+        if (best_index == 2) {
           jump_allowed = true;
         }
-        response[targets[best_index]] = signs[best_index] * /*1*/smallest_violation/2;
+        response[targets[best_index]] = signs[best_index] * /*1*/smallest_violation;
       }
 
       return response;
@@ -421,8 +421,8 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
           var modified = original + mean;
           $emoji.css(prop, ~~modified + 'px');
         }
-        vx = 0;
-        vy = 0;
+        // vx = 0;
+        // vy = 0;
       } else if (!hyperactive) {
         hyperactive = true;
         randomizeEmoji($emoji);
@@ -464,10 +464,10 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
           handleCollisionResults(collision_results);
         }
       }
-      // var final_y = $emoji.offset().top;
-      // var final_x = $emoji.offset().left;
-      // vx = final_x - x;
-      // vy = final_y - y;
+      var final_y = $emoji.offset().top;
+      var final_x = $emoji.offset().left;
+      vx = final_x - x;
+      vy = final_y - y;
 
 
       setTimeout(timestep, 30);
