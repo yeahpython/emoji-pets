@@ -1,10 +1,10 @@
 
 .chrome-pet-box {
 	position:absolute !important;
-	width:100%;
-	height:100%;
+	/*width:100%;
+	height:100%;*/
 	z-index:99999999;
-	pointer-events: none;
+	/*pointer-events: none;*/
 	left:0px;
 	top:0px;
 	/*display: block;
@@ -12,20 +12,67 @@
 	/*overflow: hidden;*/
 }
 
+#emoji_pet_floor {
+	position:fixed;
+	z-index:99999;
+	/*top:100%;*/
+	/*margin-bottom: 0px;
+	/*height:10px;*/
+}
+
 .emoji {
 	position:relative !important;
+	/*padding:20px;*/
 	width:20px !important;
 	height:20px !important;
-	font-size:14pt !important;
+	/*font-size:14pt !important;
 	z-index:99999999 !important;
-	display:block;
+	display:block;*/
 	/*overflow: visible;*/
 	/*line-height:normal;*/
+}
+
+.emoji-pet-hitbox:hover {
+	cursor:-webkit-grab;
+	/*padding-left:100px;
+	padding-top:100px;
+	padding-right:100px;
+	padding-bottom:100px;*/
+	padding-left:40px;
+	padding-top:40px;
+	border-top-left-radius: 50px;
+	border-top-right-radius: 50px;
+	left:-40px;
+	top:-40px;
+	width:60px;
+	height:19px;
+	/*background-color: rgba(255, 255, 0, 0.2);*/
+	position:absolute;
+}
+
+.emoji-pet-hitbox:active {
+	cursor:-webkit-grabbing;
+}
+
+.emoji:active {
+	cursor:-webkit-grabbing;
 }
 
 .emoji img {
 	width:20px;
 	height:20px;
+	/*pointer-events:none;*/
+}
+
+
+
+
+
+.dragging {
+	/*cursor:-webkit-grabbing !important;
+	width:100%;
+	height:100%;
+	pointer-events:auto;*/
 }
 
 #emoji:hover {
