@@ -322,10 +322,89 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
           if (~~actual_y != ~~saved_offset.top || ~~actual_x != ~~saved_offset.left) {
             console.log("Bad teleport");
             console.log(elem);
-            console.log(x + "->" + actual_x + " ," + y + "->" + actual_y);
+            console.log(saved_offset.left + "->" + actual_x + " ," + saved_offset.top + "->" + actual_y);
           }
         }
       }
+    }
+
+    function elementsOfInterest() {
+      var new_y = $emoji.offset().top;
+      var new_x = $emoji.offset().left;
+
+      var pet_width = $emoji.outerWidth();
+      var pet_height = $emoji.outerHeight();
+      var elementsOfInterest = [];
+      for (var x_index = 0; x_index < 2; x_index++) {
+        for (var y_index = 0; y_index < 2; y_index++) {
+          //
+          //      .
+          // .####
+          //  ####
+          //  ####.
+          // .
+          //
+          var probe_x = new_x - $(window).scrollLeft() - 1 + x_index * (pet_width + 2);
+          var probe_y = new_y - $(window).scrollTop() + y_index * (pet_height) - x_index; 
+          // putting the legs at different heights makes you collide with something 
+          // other than the floor when you're on the floor
+          var collision = document.elementFromPoint(probe_x, probe_y);
+          if (collision != null) {
+            elementsOfInterest.push(collision);
+          };
+        }
+      }
+      return $(elementsOfInterest);
+    }
+
+    var signs   = [    -1,      1,    -1,     1];
+    var targets = ["left", "left", "top", "top"];
+    // Side Effects: Modifies jump_allowed,
+    function getPush(index, domElement) {
+      var pet_width = $emoji.outerWidth();
+      var pet_height = $emoji.outerHeight();
+      var $this = $(domElement);
+      var position = $this.offset();
+      var new_position = {left: parseInt(position.left, 10),
+                          top:  parseInt( position.top, 10)};
+      var new_size = {width: parseInt($this.outerWidth(), 10),
+                      height: parseInt($this.outerHeight(),10)};
+
+
+      var violations = [];
+
+
+      var pet_offset = $emoji.offset()
+      var pet_left = parseInt(pet_offset.left, 10);
+      var pet_top = parseInt(pet_offset.top, 10);
+
+      violations.push(pet_left + pet_width - new_position.left);
+      violations.push((new_position.left + new_size.width) - pet_left);
+      violations.push(pet_top + pet_height - new_position.top);
+      violations.push((new_position.top + new_size.height) - pet_top);
+
+      // either there are no violations, or we can find
+      // the smallest positive number in the list
+      var smallest_violation = 0;
+      var worst_violation = 0;
+      var best_index = -1;
+      for (var i = 0; i < 4; i++) {
+        if (best_index == -1 || violations[i] < smallest_violation) {
+          smallest_violation = violations[i];
+          best_index = i;
+        }
+      }
+
+      response = {"left" : 0, "top" : 0, overlapped : (smallest_violation >= 0)};
+
+      if (smallest_violation >= 0) {
+        if (best_index != 3) {
+          jump_allowed = true;
+        }
+        response[targets[best_index]] = signs[best_index] * /*1*/smallest_violation/5;
+      }
+
+      return response;
     }
 
     function timestep() {
@@ -353,108 +432,37 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
         if (hyperactive || Math.random() > 0.85) {
           updateScrollParent(new_x, new_y);
 
-
-          // projecting step
-          var signs   = [    -1,      1,    -1,     1];
-          var targets = ["left", "left", "top", "top"];
-
-          var pet_width = $emoji.outerWidth();
-          var pet_height = $emoji.outerHeight();
-          var elementsOfInterest = [];
-          for (var x_index = 0; x_index < 2; x_index++) {
-            for (var y_index = 0; y_index < 2; y_index++) {
-              //
-              //      .
-              // .####
-              //  ####
-              //  ####.
-              // .
-              //
-              var probe_x = new_x - $(window).scrollLeft() - 1 + x_index * (pet_width + 2);
-              var probe_y = new_y - $(window).scrollTop() + y_index * (pet_height) - x_index; 
-              // putting the legs at different heights makes you collide with something 
-              // other than the floor when you're on the floor
-              var collision = document.elementFromPoint(probe_x, probe_y);
-              if (collision != null) {
-                elementsOfInterest.push(collision);
-              };
-            }
-          }
-          $elementsOfInterest = $(elementsOfInterest);
-
-
-
+          // Projecting step.
           var overlapped = false;
-          $(elementsOfInterest).not("iframe, :hidden, .emoji-pet-hitbox").filter(contains_text).each(function(){
-            var position = $(this).offset();
-            var $this = $(this);
-            var new_position = {left: parseInt(position.left, 10)/* +
-                                      parseInt($this.css("borderLeftWidth"), 10) +
-                                      parseInt($this.css("paddingLeft"), 10)*/,
-                                top:  parseInt(position.top, 10)/* +
-                                      parseInt($this.css("borderTopWidth"), 10) +
-                                      parseInt($this.css("paddingTop"), 10)*/};
-            var new_size = {width: parseInt($(this).outerWidth(), 10)/* -
-              parseInt($this.css("paddingLeft"), 10) -
-              parseInt($this.css("paddingRight"), 10)*/,
-                            height: parseInt($(this).outerHeight(),10)/* -
-                            parseInt($this.css("paddingTop"),10) -
-                            parseInt($this.css("paddingBottom"),10)*/};
-            // console.log(new_size);
-
-
-            var violations = [];
-
-
-            var pet_offset = $emoji.offset()
-            var pet_left = parseInt(pet_offset.left, 10);
-            var pet_top = parseInt(pet_offset.top, 10);
-
-            violations.push(pet_left + pet_width - new_position.left);
-            violations.push((new_position.left + new_size.width) - pet_left);
-            violations.push(pet_top + pet_height - new_position.top);
-            violations.push((new_position.top + new_size.height) - pet_top);
-
-            // either there are no violations, or we can find
-            // the smallest positive number in the list
-            var smallest_violation = 0;
-            var worst_violation = 0;
-            var best_index = -1;
-            for (var i = 0; i < 4; i++) {
-              if (best_index == -1 || violations[i] < smallest_violation) {
-                smallest_violation = violations[i];
-                best_index = i;
-              }
+          var collision_results = elementsOfInterest().not("iframe, :hidden, .emoji-pet-hitbox").filter(contains_text).map(getPush).get();
+          var dx_sum = 0;
+          var dy_sum = 0;
+          var overlap_sum = 0;
+          collision_results.forEach(function (result, index, array) {
+            if (result["overlapped"]) {
+              overlap_sum += 1
+              dx_sum += result["left"];
+              dy_sum += result["top"];
             }
+          });
+          if (overlap_sum) {
+            var dx_mean = (1.0 * dx_sum) / overlap_sum;
+            var dy_mean = (1.0 * dy_sum) / overlap_sum;
 
-            if (smallest_violation > 0) {
-              if (best_index != 3) {
-                jump_allowed = true;
-              }
-              var original = parseInt($emoji.css(targets[best_index]), 10);
-              var modified = original + signs[best_index] * /*1*/smallest_violation/5;
+            var original_left = parseInt($emoji.css("left"), 10);
+            var modified_left = original_left + dx_mean;
 
-              $emoji.css(targets[best_index], modified + 'px');
-              vx = 0;
-              vy = 0;
-            }
-            // This means that there is an overlap
-            if (smallest_violation > 0 && !hyperactive){
-              // Allow physics to wake you up.
-              hyperactive = true;
-              // randomizeEmoji($emoji);
-            }
-            if (smallest_violation >= 0) {
-              overlapped = true;
-            }
-          })
-          // No airjumping.
-          if (overlapped == false) {
-            jump_allowed = false;
+            var original_top = parseInt($emoji.css("top"), 10);
+            var modified_top = original_top + dy_mean;
+
+            $emoji.css("left", modified_left + 'px');
+            $emoji.css("top", modified_top + 'px');
+            vx = 0;
+            vy = 0;
           }
 
           // If it's in the air and not hyperactive, become hyperactive.
-          if (overlapped == false && /*parseInt($emoji.offset().top, 10) < window_bottom - 2 * pet_height &&*/ !hyperactive) {
+          if (overlapped == false && !hyperactive) {
             hyperactive = true;
             randomizeEmoji($emoji);
           }
