@@ -231,7 +231,7 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
       // Sometimes when not in motion we go to sleep
       if (hyperactive && Math.random() > 0.99 && vy == 0 && vx == 0) {
         hyperactive = false;
-        setSleepEmoji($emoji);
+        // setSleepEmoji($emoji);
       } else if (!hyperactive && Math.random() > 0.999) {
         hyperactive = true;
         randomizeEmoji($emoji);
@@ -349,11 +349,13 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
           // putting the legs at different heights makes you collide with something 
           // other than the floor when you're on the floor
           var collision = document.elementFromPoint(probe_x, probe_y);
-          if (collision != null) {
+          // Linear search because the list is so short
+          if (collision != null && elementsOfInterest.indexOf(collision) == -1) {
             elementsOfInterest.push(collision);
           };
         }
       }
+      console.log(elementsOfInterest);
       return $(elementsOfInterest);
     }
 
@@ -401,7 +403,7 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
         if (best_index == 2) {
           jump_allowed = true;
         }
-        response[targets[best_index]] = signs[best_index] * /*1*/smallest_violation;
+        response[targets[best_index]] = signs[best_index] * /*1*/smallest_violation/2;
       }
 
       return response;
@@ -451,16 +453,18 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
         $emoji.offset({left:new_x, top:new_y});
 
         // This is the expensive stuff. When not hyperactive, all collisions are done only intermittently.
-        if (hyperactive || Math.random() > 0.85) {
+        if (hyperactive || Math.random() > 0.95) {
           updateScrollParent(new_x, new_y);
 
           // Projecting step.
           var overlapped = false;
+          
           var collision_results = elementsOfInterest()
             .not("iframe, :hidden, .emoji-pet-hitbox")
             .filter(is_collideable)
             .map(getPush)
             .get();
+          console.log(collision_results);
           handleCollisionResults(collision_results);
         }
       }
