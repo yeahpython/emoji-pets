@@ -48,7 +48,7 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
 
   // Condition for deciding whether this is a collideable object.
   // Checks if this contains text, but not via a child node.
-  function contains_text(index,elem) {
+  function is_collideable(index,elem) {
     // Exceptions to the rule
     if (["VIDEO", "IMG", "INPUT"].indexOf($(this).prop("tagName")) != -1) {
       return true;
@@ -229,7 +229,7 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
         }
       }
       // Sometimes when not in motion we go to sleep
-      if (hyperactive && Math.random() > 0.9 && vy == 0 && vx == 0) {
+      if (hyperactive && Math.random() > 0.99 && vy == 0 && vx == 0) {
         hyperactive = false;
         setSleepEmoji($emoji);
       } else if (!hyperactive && Math.random() > 0.999) {
@@ -401,10 +401,32 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
         if (best_index != 3) {
           jump_allowed = true;
         }
-        response[targets[best_index]] = signs[best_index] * /*1*/smallest_violation/5;
+        response[targets[best_index]] = signs[best_index] * /*1*/smallest_violation/2;
       }
 
       return response;
+    }
+
+    function handleCollisionResults(collision_results) {
+      var sum = collision_results.reduce(function(a, b){
+        return {"overlapped" : a["overlapped"] + b["overlapped"],
+                "left"       : a["left"]       + b["left"],
+                "top"        : a["top"]        + b["top"]};
+      }, {"left" : 0, "top" : 0, "overlapped" : 0});
+      if (sum["overlapped"]) {
+        for (const prop in sum) {
+          if (prop == "overlapped") continue;
+          var mean = (1.0 * sum[prop]) / sum["overlapped"];
+          var original = parseInt($emoji.css(prop), 10);
+          var modified = original + mean;
+          $emoji.css(prop, ~~modified + 'px');
+        }
+        vx = 0;
+        vy = 0;
+      } else if (!hyperactive) {
+        hyperactive = true;
+        randomizeEmoji($emoji);
+      }
     }
 
     function timestep() {
@@ -434,43 +456,23 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
 
           // Projecting step.
           var overlapped = false;
-          var collision_results = elementsOfInterest().not("iframe, :hidden, .emoji-pet-hitbox").filter(contains_text).map(getPush).get();
-          var dx_sum = 0;
-          var dy_sum = 0;
-          var overlap_sum = 0;
-          collision_results.forEach(function (result, index, array) {
-            if (result["overlapped"]) {
-              overlap_sum += 1
-              dx_sum += result["left"];
-              dy_sum += result["top"];
-            }
-          });
-          if (overlap_sum) {
-            var dx_mean = (1.0 * dx_sum) / overlap_sum;
-            var dy_mean = (1.0 * dy_sum) / overlap_sum;
-
-            var original_left = parseInt($emoji.css("left"), 10);
-            var modified_left = original_left + dx_mean;
-
-            var original_top = parseInt($emoji.css("top"), 10);
-            var modified_top = original_top + dy_mean;
-
-            $emoji.css("left", modified_left + 'px');
-            $emoji.css("top", modified_top + 'px');
-            vx = 0;
-            vy = 0;
-          }
-
-          // If it's in the air and not hyperactive, become hyperactive.
-          if (overlapped == false && !hyperactive) {
-            hyperactive = true;
-            randomizeEmoji($emoji);
-          }
+          var collision_results = elementsOfInterest()
+            .not("iframe, :hidden, .emoji-pet-hitbox")
+            .filter(is_collideable)
+            .map(getPush)
+            .get();
+          handleCollisionResults(collision_results);
         }
       }
+      // var final_y = $emoji.offset().top;
+      // var final_x = $emoji.offset().left;
+      // vx = final_x - x;
+      // vy = final_y - y;
+
 
       setTimeout(timestep, 30);
     }
+
     timestep();
   }
 }
