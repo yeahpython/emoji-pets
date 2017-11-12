@@ -9,9 +9,19 @@
 //   }
 // });
 
+window.emojiPetDependenciesLoaded = true;
+
 if (typeof addEmoji === 'undefined' || !addEmoji) {
-  var kFloorHeight = 0;
-  $("<div id='emoji_pet_floor'><div/>").addClass("floor").text("...").appendTo($("body"));
+  var USE_DEFAULT_EMOJI = false;
+  var LEFT_KEY = 37;
+  var UP_KEY = 38;
+  var RIGHT_KEY = 39;
+  var DOWN_KEY = 40;
+
+  var MAX_EMOJI = 100;
+
+  var kFloorHeight = USE_DEFAULT_EMOJI ? 10 : 2;
+  $("<div id='emoji-pet-floor'><div/>").addClass("floor").appendTo($("body"));
   // define a bunch of functions, also start a scanning loop.
 
   // modified from https://stackoverflow.com/questions/35939886/find-first-scrollable-parent
@@ -49,7 +59,6 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
     if ($(this).hasClass("emoji-pet-hitbox")) {
       return true;
     }
-    console.log(this);
 
 
     var immediatelyContainedText = $(this).contents().not($(this).children()).filter(function() {
@@ -59,9 +68,21 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
     return immediatelyContainedText != "";
   }
 
-  function randomizeEmoji($emoji){
-    $emoji.children(".emoji-pet-hitbox").children("img").attr("src", chrome.extension.getURL('third-party/emojione/1f6' + ("0" + Math.floor((Math.random() * 45))).slice(-2) + '.png'));
 
+  function setSleepEmoji($emoji) {
+    if (USE_DEFAULT_EMOJI) {
+      $emoji.children(".emoji-pet-hitbox").children(".text-emoji").html("&#" + (128513 + 34) + ";");
+    } else {
+      $emoji.children(".emoji-pet-hitbox").children("img").attr("src", chrome.extension.getURL('third-party/emojione/1f634.png'));
+    }
+  }
+
+  function randomizeEmoji($emoji){
+    if (USE_DEFAULT_EMOJI) {
+      $emoji.children(".emoji-pet-hitbox").children(".text-emoji").html("&#" + (128513 + Math.floor(Math.random() * (128567 - 128513))) + ";");
+    } else {
+      $emoji.children(".emoji-pet-hitbox").children("img").attr("src", chrome.extension.getURL('third-party/emojione/1f6' + ("0" + Math.floor((Math.random() * 45))).slice(-2) + '.png'));
+    }
     // $emoji
     // new version uses native emoji
     // $emoji.html("&#" + (128513 + Math.floor(Math.random() * (128567 - 128513))) + ";");
@@ -72,11 +93,42 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
     // old version loads an image file
     $emoji.html("");
     $emoji.append($("<div/>").addClass("emoji-pet-hitbox"));
-    $emoji.children(".emoji-pet-hitbox").append($("<img>"));
+    if (USE_DEFAULT_EMOJI) {
+      $emoji.children(".emoji-pet-hitbox").append($("<div/>").addClass("text-emoji"));
+    } else {
+      $emoji.children(".emoji-pet-hitbox").append($("<img>"));
+    }
     randomizeEmoji($emoji);
     // $emoji
     // new version uses native emoji
     // $emoji.html("&#" + (128513 + Math.floor(Math.random() * (128567 - 128513))) + ";");
+
+    $emoji.css("left", $(window).scrollLeft() + Math.floor(window.innerWidth/2));
+    $emoji.css("top", $(window).scrollTop() + Math.floor(window.innerHeight/2));
+  }
+  var rightMargin = USE_DEFAULT_EMOJI ? 20 : 10;
+  function enforcePositionContraints($emoji, x, y) {
+    var window_top = $(window).scrollTop();
+    var window_left = $(window).scrollLeft();
+    var window_bottom = window_top + window.innerHeight;
+    var window_right = window_left + document.body.clientWidth;
+    var jump_allowed = false;
+    if (y < window_top) {
+        y = window_top;
+    } else if (y + $emoji.outerHeight() > window_bottom - kFloorHeight) {
+      // The boundary of 5 is so that the image boundary doesn't go off screen, 
+      // which would increase the page size and add flickery scrollbars.
+      y = window_bottom - $emoji.outerHeight() - kFloorHeight;
+      jump_allowed = true
+    }
+    if (x < window_left/* + $emoji.outerWidth()*/) {
+      x = window_left/* + $emoji.outerWidth()*/;
+      jump_allowed = true
+    } else if (x + $emoji.outerWidth() > window_right - rightMargin) {
+      x = window_right - $emoji.outerWidth() - rightMargin;
+      jump_allowed = true
+    }
+    return {"y":y, "x":x, "jump_allowed":jump_allowed}
   }
 
   // function setSleepEmoji($emoji){
@@ -88,23 +140,18 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
   //   // $emoji.html("&#" + (128513 + Math.floor(Math.random() * (128567 - 128513))) + ";");
   // }
 
-  // add a new emoji to the page, with a loop associated with it.
-  // doens't add an emoji if there are already too many.
-  function addEmoji(){
-    var active = true;
-
-
-
-    var hitLimit = true;
-    for (var emoji_index = 0; emoji_index < 10; emoji_index++) {
+  function findPetBox() {
+    for (var emoji_index = 0; emoji_index < MAX_EMOJI; emoji_index++) {
       if ($("#chrome-pet-box-" + emoji_index).size() == 0) {
-        hitLimit = false;
-        break;
+        return emoji_index;
       }
     }
-    if (hitLimit) {
-      return;
-    }
+    return -1;
+  }
+
+  function getEmoji() {
+    emoji_index = findPetBox();
+    if (emoji_index == -1) return null;
 
     // add higher level container (is this necessary?)
     var pet_box_id = "chrome-pet-box-" + emoji_index;
@@ -120,57 +167,57 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
       .addClass("emoji")
       .appendTo($chrome_pet_box);
 
-    var is_dragging = false;
     $emoji.draggable({
       stack: ".emoji",
       scroll: false,
-      start: function(event, ui){
-               is_dragging = true;
-               $("#emoji_pet_floor").addClass("dragging");
-             },
       stop : function(event, ui){
-               is_dragging = false;
-               $("#emoji_pet_floor").removeClass("dragging");
                vx = 0;
                vy = 0;
                jump_allowed = false;
                hyperactive = true;
              }
     });
-    initializeEmoji($emoji);
-    // old: set with image
-    // $("<img id='emoji'></img>").attr("src", chrome.extension.getURL('emojione/1f600.png')).appendTo($emoji);
 
-    $emoji.css("left", $(window).scrollLeft() + Math.floor(window.innerWidth/2));
-    $emoji.css("top", $(window).scrollTop() + Math.floor(window.innerHeight/2));
-    // console.log($(window).scrollTop());
-    // console.log(Math.floor(window.innerHeight/2));
-    // console.log($emoji.offset());
+    return $emoji;
+  }
+
+
+  // add a new emoji to the page, with a loop associated with it.
+  // doens't add an emoji if there are already too many.
+  function addEmoji(){
+
+    var $emoji = getEmoji(MAX_EMOJI);
+    if ($emoji === null) return;
+    var $chrome_pet_box = $emoji.parent();
+
+    initializeEmoji($emoji);
+
     var vx = Math.floor(10 * Math.random());
     var vy = -10;
     var smooth_accumulator = 0.0
-    var keydowns     = {37/*left*/:false, 38/*up*/:false, 39/*right*/:false, 40/*down*/:false}
+    var keydowns     = {LEFT_KEY:false, UP_KEY:false, RIGHT_KEY:false, DOWN_KEY:false}
     var jump_allowed = false
 
-    // coordinates of emoji in parent (possible different from current parent) during previous frame
-    var last_support_left = 0;
-    var last_support_top = 0;
 
-    // Don't switch to tags of this kind
+    // Don't use these kinds of things as scrolling parents.
     var ignored_parent_tags = ["IMG", "TEXTAREA", "BR", "VIDEO", "INPUT", "path", "svg", "g", "IFRAME"];
     var last_immediate_parent = null;
     var hyperactive = true;
-    function timestep() {
+
+    function randomlyChangeKeydownsAndAppearance() {
       // Randomly change motion and appearance
-      for (var i = 37; i <40; i++) {
+      for (var key = LEFT_KEY; key < DOWN_KEY; key++) {
         var rand = Math.random();
-        var threshold = 0.97;
-        if (i == 38) {
-          threshold = keydowns[38] ? 0.92 : 0.98
+
+        // left and right have a fixed threshold towards changing.
+        // the up key is biased towards not jumping.
+        var threshold = 0.03;
+        if (key == UP_KEY) {
+          threshold = keydowns[UP_KEY] ? 0.08 : 0.02
         }
-        if (rand > threshold) {
-          keydowns[i] = !keydowns[i];
-          if (rand > 0.995) {
+        if (rand < threshold) {
+          keydowns[key] = !keydowns[key];
+          if (rand < 0.005) {
             if (hyperactive) {
               randomizeEmoji($emoji);
             }
@@ -178,52 +225,57 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
         }
         // avoid movement in general in non hyperactive state
         if (!hyperactive && Math.random() > 0.9) {
-          keydowns[i] = false;
+          keydowns[key] = false;
         }
       }
       // Sometimes when not in motion we go to sleep
       if (hyperactive && Math.random() > 0.9 && vy == 0 && vx == 0) {
         hyperactive = false;
-        // setSleepEmoji($emoji);
+        setSleepEmoji($emoji);
       } else if (!hyperactive && Math.random() > 0.999) {
-        // some probability of waking up
         hyperactive = true;
+        randomizeEmoji($emoji);
       }
+    }
 
-
+    var childType = USE_DEFAULT_EMOJI ? ".text-emoji" : "img"; 
+    function renderKeydowns() {
       // Set velocity based on keystrokes
-      if (keydowns[39] && !keydowns[37]) {
-        vx = 4;
-        $emoji.children().children("img").css("transform", "rotate(30deg)");
-      } else if (keydowns[37] && !keydowns[39]) {
-        vx = -4;
-        $emoji.children().children("img").css("transform", "rotate(-30deg)");
+      if (keydowns[RIGHT_KEY] && !keydowns[LEFT_KEY]) {
+        $emoji.children().children(childType).css("transform", "rotate(30deg)");
+      } else if (keydowns[LEFT_KEY] && !keydowns[RIGHT_KEY]) {
+        $emoji.children().children(childType).css("transform", "rotate(-30deg)");
       } else {
+        $emoji.children().children(childType).css("transform", "none");
+      }
+    }
 
-        $emoji.children().children("img").css("transform", "none");
+    function updateVelocityAndJumpstateFromKeydowns() {
+      // Sideways motion.
+      if (keydowns[RIGHT_KEY] && !keydowns[LEFT_KEY]) {
+        vx = 4;
+      } else if (keydowns[LEFT_KEY] && !keydowns[RIGHT_KEY]) {
+        vx = -4;
+      } else {
         if (vx > 0) {
           vx = Math.max(vx - 1, 0);
         } else if (vx < 0) {
           vx = Math.min(vx + 1, 0);
         }
       }
-      if (keydowns[38] /*&& !old_keydowns[38]*/ && jump_allowed && hyperactive) {
+
+      // Jumping
+      if (keydowns[UP_KEY] && jump_allowed && hyperactive) {
         vy = -10;
         jump_allowed = false;
       }
-      // store previous state of keys
-      // old_keydowns = {37:keydowns[37], 38:keydowns[38], 39:keydowns[39], 40:keydowns[40]}
-      // console.log(old_keydowns);
-      // console.log("step");
-      //physics step: move the box
-      if (hyperactive) { // don't even do physics in the resting state
-        smooth_accumulator += 0.8;
+
+      // Gravity
+      if (hyperactive) {
+        vy += 0.8;
       }
-      // uhh
-      while (smooth_accumulator > 1) {
-        vy += 1;
-        smooth_accumulator -= 1.0;
-      }
+
+      // Velocity capping
       if (vy > 9) {
         vy = 9;
       }
@@ -236,116 +288,81 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
       if (vx < -9) {
         vx = -9;
       }
+    }
+
+    // If we can move ourself to moving divs, scrolling looks smooth.
+    function updateScrollParent(new_x, new_y) {
+      var base_x = new_x - $(window).scrollLeft() + $emoji.width()/2;
+      var base_y = new_y - $(window).scrollTop() + $emoji.height() + 1;
+      var elem = document.elementFromPoint(base_x, base_y);
+      if (base_y > window.innerHeight - kFloorHeight) {
+        elem = document.getElementById("emoji-pet-floor")
+      }
+
+      var saved_offset = $emoji.offset();
+
+      // trick: Change the parent of $chrome_pet_box
+      // determine candidate parent
+      if (elem != last_immediate_parent) {
+        last_immediate_parent = elem;
+        if (elem != null) {
+          elem = getScrollParent(elem, false);
+        }
+        if (elem != $chrome_pet_box.parent()[0] && elem != null && ignored_parent_tags.indexOf($(elem).prop("tagName")) == -1) {
+          // console.log(elem);
+          // Move to new parent.
+          $chrome_pet_box.appendTo(elem);
+          // Find out the change of coordinates that is induced by the change.
+          var modified_y = $emoji.offset().top;
+          var modified_x = $emoji.offset().left;
+
+          $emoji.offset(saved_offset);
+          actual_y = $emoji.offset().top;
+          actual_x = $emoji.offset().left;
+          if (~~actual_y != ~~saved_offset.top || ~~actual_x != ~~saved_offset.left) {
+            console.log("Bad teleport");
+            console.log(elem);
+            console.log(x + "->" + actual_x + " ," + y + "->" + actual_y);
+          }
+        }
+      }
+    }
+
+    function timestep() {
+      randomlyChangeKeydownsAndAppearance();
+      renderKeydowns();
+      updateVelocityAndJumpstateFromKeydowns();
 
 
       var y = $emoji.offset().top;
       var x = $emoji.offset().left;
-      // console.log("y" + y);
-      // Project the emoji into view
-      var window_top = $(window).scrollTop();
 
-      var window_left = $(window).scrollLeft();
-      var window_bottom = window_top + window.innerHeight;
-      var window_right = window_left + document.body.clientWidth;
+      var new_state_info = enforcePositionContraints($emoji, x + vx, y + vy);
+      jump_allowed = jump_allowed || new_state_info["jump_allowed"];
+      var new_y = new_state_info["y"];
+      var new_x = new_state_info["x"];
+      vx = new_x - x;
+      vy = new_y - y;
 
-      var base_x = x - $(window).scrollLeft() + $emoji.width()/2;
-      var base_y = y - $(window).scrollTop() + $emoji.height() + 1;
-
-      // $(".highlight").removeClass("highlight");
-      var dx = 0;
-      var dy = 0;
-
-      // change reference position
-      x = x + dx;
-      y = y + dy;
-      var new_y = y + vy;
-      var new_x = x + vx;
-      //var rightMargin = $emoji.outerWidth()
-      if (new_y < window_top) {
-        new_y = window_top;
-        vy = new_y - y;
-      } else if (new_y + $emoji.outerHeight() > window_bottom - kFloorHeight) {
-        // The boundary of 5 is so that the image boundary doesn't go off screen, 
-        // which would increase the page size and add flickery scrollbars.
-        new_y = window_bottom - $emoji.outerHeight() - kFloorHeight;
-        vy = new_y - y;
-        jump_allowed = true
-      }
-      if (new_x < window_left/* + $emoji.outerWidth()*/) {
-        new_x = window_left/* + $emoji.outerWidth()*/;
-        vx = new_x - x;
-        jump_allowed = true
-      } else if (new_x + $emoji.outerWidth() > window_right/* - rightMargin*/) {
-        new_x = window_right - $emoji.outerWidth()/* - rightMargin*/;
-        vx = new_x - x;
-        jump_allowed = true
-      } 
-
+      // Colliding with other random divs
       // Only do complicated physics stuff if you not being dragged
-      if (!is_dragging/*new_y + $emoji.outerHeight() > window_top &&
-          new_y < window_bottom &&
-          new_x + $emoji.outerWidth() > window_left &&
-          new_x < window_right*/) {
-
-        // Apply relative fix to position based on collision
-        // var temp_y = parseInt($emoji.css("top"), 10);
-        // var temp_x = parseInt($emoji.css("left"), 10);
-        // $emoji.css("top", temp_y + vy);
-        // $emoji.css("left", temp_x + vx);
-
+      if (!$emoji.is('.ui-draggable-dragging')) {
         $emoji.offset({left:new_x, top:new_y});
 
         // This is the expensive stuff. When not hyperactive, all collisions are done only intermittently.
         if (hyperactive || Math.random() > 0.85) {
-          var elem = document.elementFromPoint(base_x, base_y);
-          if (base_y > window.innerHeight - kFloorHeight) {
-            elem = document.getElementById("emoji_pet_floor")
-          }
-          y = $emoji.offset().top;
-          x = $emoji.offset().left;
-
-          // trick: Change the parent of $chrome_pet_box
-          // determine candidate parent
-          if (elem != last_immediate_parent) {
-            // last_immediate_parent = elem;
-            if (elem != null) {
-              elem = getScrollParent(elem, false);
-            }
-            if (elem != $chrome_pet_box.parent()[0] && elem != null && ignored_parent_tags.indexOf($(elem).prop("tagName")) == -1) {
-              // console.log(elem);
-              // Move to new parent.
-              $chrome_pet_box.appendTo(elem);
-              // Find out the change of coordinates that is induced by the change.
-              var modified_y = $emoji.offset().top;
-              var modified_x = $emoji.offset().left;
-              var needed_dy = y-modified_y;
-              var needed_dx = x-modified_x;
-
-              // Add offset to keep global position consistent.
-              var targ = {left:x, top:y};
-              // console.log(targ);
-              $emoji.offset(targ);
-              actual_y = $emoji.offset().top;
-              actual_x = $emoji.offset().left;
-              if (~~actual_y != y || ~~actual_x != x) {
-                console.log("Bad teleport");
-                console.log(elem);
-                console.log(x + "->" + actual_x + " ," + y + "->" + actual_y);
-              }
-            }
-          }
-
+          updateScrollParent(new_x, new_y);
 
 
           // projecting step
-          var signs = [-1, 1, -1, 1];
+          var signs   = [    -1,      1,    -1,     1];
           var targets = ["left", "left", "top", "top"];
 
           var pet_width = $emoji.outerWidth();
           var pet_height = $emoji.outerHeight();
           var elementsOfInterest = [];
-          for (var i = 0; i < 2; i++) {
-            for (var j = 0; j < 2; j++) {
+          for (var x_index = 0; x_index < 2; x_index++) {
+            for (var y_index = 0; y_index < 2; y_index++) {
               //
               //      .
               // .####
@@ -353,13 +370,13 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
               //  ####.
               // .
               //
-              var newX = x - $(window).scrollLeft() - 1 + i * (pet_width + 2);
-              var newY = y - $(window).scrollTop() + j * (pet_height) - i; 
+              var probe_x = new_x - $(window).scrollLeft() - 1 + x_index * (pet_width + 2);
+              var probe_y = new_y - $(window).scrollTop() + y_index * (pet_height) - x_index; 
               // putting the legs at different heights makes you collide with something 
               // other than the floor when you're on the floor
-              var elem = document.elementFromPoint(newX, newY);
-              if (elem != null) {
-                elementsOfInterest.push(elem);
+              var collision = document.elementFromPoint(probe_x, probe_y);
+              if (collision != null) {
+                elementsOfInterest.push(collision);
               };
             }
           }
@@ -368,7 +385,7 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
 
 
           var overlapped = false;
-          $(elementsOfInterest).not("iframe, :hidden").not($emoji.children()).filter(contains_text).each(function(){
+          $(elementsOfInterest).not("iframe, :hidden, .emoji-pet-hitbox").filter(contains_text).each(function(){
             var position = $(this).offset();
             var $this = $(this);
             var new_position = {left: parseInt(position.left, 10)/* +
@@ -415,7 +432,7 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
                 jump_allowed = true;
               }
               var original = parseInt($emoji.css(targets[best_index]), 10);
-              var modified = original + signs[best_index] * /*1*/smallest_violation/2;
+              var modified = original + signs[best_index] * /*1*/smallest_violation/5;
 
               $emoji.css(targets[best_index], modified + 'px');
               vx = 0;
@@ -444,11 +461,7 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
         }
       }
 
-      if (active) {
-        setTimeout(timestep, 30);
-      } else {
-        $chrome_pet_box.remove();
-      }
+      setTimeout(timestep, 30);
     }
     timestep();
   }
