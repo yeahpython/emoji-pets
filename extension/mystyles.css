@@ -32,9 +32,11 @@
 	/*line-height:normal;*/
 }
 
-.emoji-pet-highlight:after {
+.emoji-pet-highlight {
+	/*-webkit-filter: hue-rotate(40deg)*/
+	/*display:inline-block;*/
 	/*content: "😃"*/
-	/*border: dashed 1px black;*/
+	/*border: dashed 1px gray;*/
 	/*background-color:rgba(255, 255, 0, 0.1);*/
 	/*-webkit-filter: blur(2px) grayscale (.5) opacity(0.8) hue-rotate(120deg);*/
 }
@@ -59,6 +61,25 @@
 	-webkit-box-sizing: content-box;
 	/*overflow:hidden;*/
 }
+
+/*.grounded * :after {
+    content:"";
+    line-height:1px;
+	display:inline-block;
+	border-bottom-left-radius: 10px;
+	border-bottom-right-radius: 10px;
+    opacity:0.1;
+    top:-10px;
+    left:2px;
+	min-width:16px;
+	min-height:6px;
+	height:6px;
+	max-height:6px;
+	overflow:hidden;
+	position:relative;
+	background-color: black;
+}*/
+
 /*
 .emoji-pet-hitbox::after {
 	content:"";
@@ -90,7 +111,7 @@
 }
 
 .text-emoji {
-	font-size: 14pt !important;
+	font-size: 12pt !important;
 	display:inline-block !important;
 	width:20px !important;
 	height:20px !important;

@@ -110,8 +110,10 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
   function enforcePositionContraints($emoji, x, y) {
     var window_top = $(window).scrollTop();
     var window_left = $(window).scrollLeft();
-    var window_bottom = window_top + window.innerHeight;
-    var window_right = window_left + document.body.clientWidth;
+    // Use window.innerHeight as fallback on pages that don't specify DOCTYPE.
+    // Has downside that it can't detect scrollbars.
+    var window_bottom = window_top + (document.doctype.name == "html" ? $(window).height() : window.innerHeight);
+    var window_right = window_left + (document.doctype.name == "html" ? $(window).width() : window.innerWidth);
     var jump_allowed = false;
     if (y < window_top) {
         y = window_top;
@@ -284,6 +286,8 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
         // Gravity
         if (hyperactive) {
           vy += 0.8;
+        } else {
+          vy = 0;
         }
 
         // Velocity capping
@@ -302,10 +306,11 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
       }
     }
 
+    var base_offset = 1;
     // If we can move ourself to moving divs, scrolling looks smooth.
     function updateScrollParent(new_x, new_y) {
       var base_x = new_x - $(window).scrollLeft() + $emoji.width()/2;
-      var base_y = new_y - $(window).scrollTop() + $emoji.height() + 1;
+      var base_y = new_y - $(window).scrollTop() + $emoji.height() + base_offset;
       var elem = document.elementFromPoint(base_x, base_y);
       if (base_y > window.innerHeight - kFloorHeight) {
         elem = document.getElementById("emoji-pet-floor")
@@ -317,11 +322,16 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
       // determine candidate parent
       if (elem != last_immediate_parent) {
         last_immediate_parent = elem;
+        if ($.contains($emoji.get(0), elem)) {
+          elem = document.body;
+          console.log("Found self as scroll parent; using document.body by default and incrementing base_offset.");
+          base_offset += 1;
+        } 
         if (elem != null) {
           elem = getScrollParent(elem, false);
         }
         if (elem != $chrome_pet_box.parent()[0] && elem != null && ignored_parent_tags.indexOf($(elem).prop("tagName")) == -1) {
-          // console.log(elem);
+          //console.log(elem);
           // Move to new parent.
           $chrome_pet_box.appendTo(elem);
           // Find out the change of coordinates that is induced by the change.
@@ -453,6 +463,11 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
 
       var new_state_info = enforcePositionContraints($emoji, x + vx, y + vy);
       jump_allowed = jump_allowed || new_state_info["jump_allowed"];
+      // if (jump_allowed) {
+      //   $emoji.children(".emoji-pet-hitbox").addClass("grounded");
+      // } else {
+      //   $emoji.children(".emoji-pet-hitbox.grounded").removeClass("grounded");
+      // }
       var new_y = new_state_info["y"];
       var new_x = new_state_info["x"];
       vx = new_x - x;
