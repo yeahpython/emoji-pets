@@ -1,7 +1,7 @@
 {
   "name": "Emoji Pets",
   "description": "Get your own cute emoji pets to explore the internet with you!",
-  "version": "1.4",
+  "version": "1.5",
   "permissions": [
     "https://*/*",
     "http://*/*"

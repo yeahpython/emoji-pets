@@ -118,7 +118,7 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
     if (y < window_top) {
         y = window_top;
     } else if (y + $emoji.outerHeight() > window_bottom - kFloorHeight) {
-      // The boundary of 5 is so that the image boundary doesn't go off screen, 
+      // The boundary of 5 is so that the image boundary doesn't go off screen,
       // which would increase the page size and add flickery scrollbars.
       y = window_bottom - $emoji.outerHeight() - kFloorHeight;
       jump_allowed = true
@@ -216,34 +216,34 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
 
         // left and right have a fixed threshold towards changing.
         // the up key is biased towards not jumping.
-        var threshold = 0.03;
+        var threshold = 0.02;
         if (key == UP_KEY) {
-          threshold = keydowns[UP_KEY] ? 0.08 : 0.02
+          threshold = keydowns[UP_KEY] ? 0.05 : 0.012
         }
         if (rand < threshold) {
           keydowns[key] = !keydowns[key];
-          if (rand < 0.005) {
+          if (rand < 0.003) {
             if (hyperactive) {
               randomizeEmoji($emoji);
             }
           }
         }
         // avoid movement in general in non hyperactive state
-        if (!hyperactive && Math.random() > 0.9) {
+        if (!hyperactive && Math.random() > 0.94) {
           keydowns[key] = false;
         }
       }
       // Sometimes when not in motion we go to sleep
-      if (hyperactive && Math.random() > 0.99 && vy == 0 && vx == 0) {
+      if (hyperactive && Math.random() > 0.994 && vy == 0 && vx == 0) {
         hyperactive = false;
         // setSleepEmoji($emoji);
-      } else if (!hyperactive && Math.random() > 0.999) {
+      } else if (!hyperactive && Math.random() > 0.9994) {
         hyperactive = true;
         randomizeEmoji($emoji);
       }
     }
 
-    var childType = USE_DEFAULT_EMOJI ? ".text-emoji" : "img"; 
+    var childType = USE_DEFAULT_EMOJI ? ".text-emoji" : "img";
     function renderKeydowns() {
       // Set velocity based on keystrokes
       var transform = ""
@@ -258,7 +258,8 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
       $emoji.children().children(childType).css("-webkit-transform", transform);
     }
 
-    function updateVelocityAndJumpstateFromKeydowns() {
+    function updateVelocityAndJumpstateFromKeydowns(ratio) {
+
       // Sideways motion.
       if (keydowns[RIGHT_KEY] && !keydowns[LEFT_KEY]) {
         vx = 4;
@@ -278,14 +279,14 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
         jump_allowed = false;
       }
 
-      
+
 
       if ($emoji.is('.ui-draggable-dragging')) {
       } else {
 
         // Gravity
         if (hyperactive) {
-          vy += 0.8;
+          vy += 0.8 * ratio;
         } else {
           vy = 0;
         }
@@ -326,7 +327,7 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
           elem = document.body;
           console.log("Found self as scroll parent; using document.body by default and incrementing base_offset.");
           base_offset += 1;
-        } 
+        }
         if (elem != null) {
           elem = getScrollParent(elem, false);
         }
@@ -367,8 +368,8 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
           // .
           //
           var probe_x = new_x - $(window).scrollLeft() - 1 + x_index * (pet_width + 2);
-          var probe_y = new_y - $(window).scrollTop() + y_index * (pet_height) - x_index; 
-          // putting the legs at different heights makes you collide with something 
+          var probe_y = new_y - $(window).scrollTop() + y_index * (pet_height) - x_index;
+          // putting the legs at different heights makes you collide with something
           // other than the floor when you're on the floor
           var collision = document.elementFromPoint(probe_x, probe_y);
           // Linear search because the list is so short
@@ -452,16 +453,24 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
       }
     }
 
+    if (!window.emoji_animation_tasks) {
+      window.emoji_animation_tasks = []
+    }
+    var time = Date.now();
     function timestep() {
+      var new_time = Date.now();
+      var dt = (new_time - time) / 30.0;
+      if (dt <= 0) return;
+      time = new_time;
       randomlyChangeKeydownsAndAppearance();
       renderKeydowns();
-      updateVelocityAndJumpstateFromKeydowns();
+      updateVelocityAndJumpstateFromKeydowns(dt);
 
 
       var y = $emoji.offset().top;
       var x = $emoji.offset().left;
 
-      var new_state_info = enforcePositionContraints($emoji, x + vx, y + vy);
+      var new_state_info = enforcePositionContraints($emoji, x + vx * dt, y + vy * dt);
       jump_allowed = jump_allowed || new_state_info["jump_allowed"];
       // if (jump_allowed) {
       //   $emoji.children(".emoji-pet-hitbox").addClass("grounded");
@@ -470,8 +479,8 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
       // }
       var new_y = new_state_info["y"];
       var new_x = new_state_info["x"];
-      vx = new_x - x;
-      vy = new_y - y;
+      vx = (new_x - x) / dt;
+      vy = (new_y - y) / dt;
 
       // Colliding with other random divs
       // Only do complicated physics stuff if you not being dragged
@@ -499,14 +508,21 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
       }
       var final_y = $emoji.offset().top;
       var final_x = $emoji.offset().left;
-      vx = final_x - x;
-      vy = final_y - y;
-
-
-      setTimeout(timestep, 30);
+      vx = (final_x - x) / dt;
+      vy = (final_y - y) / dt;
     }
 
-    timestep();
+    window.emoji_animation_tasks.push(timestep);
+
+    if (!window.timestep) {
+      window.timestep = function() {
+        for (var i = 0; i < window.emoji_animation_tasks.length; i++) {
+          window.emoji_animation_tasks[i]();
+        }
+        window.requestAnimationFrame(window.timestep);
+      }
+      window.timestep();
+    }
   }
 }
 addEmoji();
