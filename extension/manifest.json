@@ -1,10 +1,9 @@
 {
   "name": "Emoji Pets",
   "description": "Get your own cute emoji pets to explore the internet with you!",
-  "version": "1.6",
+  "version": "1.7",
   "permissions": [
-    "https://*/*",
-    "http://*/*"
+    "activeTab"
   ],
   "background": {
     "scripts":["background.js"],

@@ -453,9 +453,6 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
       }
     }
 
-    if (!window.emoji_animation_tasks) {
-      window.emoji_animation_tasks = []
-    }
     var time = Date.now();
     function timestep() {
       var new_time = Date.now();
@@ -512,16 +509,27 @@ if (typeof addEmoji === 'undefined' || !addEmoji) {
       vy = (final_y - y) / dt;
     }
 
-    window.emoji_animation_tasks.push(timestep);
+    $emoji.get(0).animation_task = timestep;
 
     if (!window.timestep) {
       window.timestep = function() {
-        for (var i = 0; i < window.emoji_animation_tasks.length; i++) {
-          window.emoji_animation_tasks[i]();
-        }
+        $(".emoji").map(function(index, elem){
+          elem.animation_task();
+        })
         window.requestAnimationFrame(window.timestep);
       }
       window.timestep();
+    }
+    if ($(".emoji-quit").length == 0) {
+      $("<button/>")
+        .attr("id", "emoji-quit-button")
+        .text("remove all emojis")
+        .addClass("emoji-quit")
+        .click(function(){
+          $(".chrome-pet-box").remove();
+          $(".emoji-quit").remove();
+        })
+        .appendTo(document.body);
     }
   }
 }
